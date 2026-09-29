@@ -23,6 +23,8 @@ from app.services.session_service import (
     revoke_session
 )
 
+from app.services.event_service import record_login_event
+
 
 auth_bp = Blueprint(
     "auth",
@@ -149,6 +151,8 @@ def login():
             "SESSION_TTL_SECONDS"
         ]
     )
+
+    record_login_event(session)
 
     response = jsonify({
         "message": "login successful",
