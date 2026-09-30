@@ -1,3 +1,4 @@
+
 from flask import (
     Blueprint,
     request,
@@ -26,9 +27,6 @@ detection_bp = Blueprint(
     methods=["GET"]
 )
 def current_detection():
-    """
-    Analyze the currently authenticated session.
-    """
 
     token = request.cookies.get(
         current_app.config[
@@ -36,13 +34,19 @@ def current_detection():
         ]
     )
 
-    session = get_session_from_token(token)
+    session = get_session_from_token(
+        token
+    )
 
     if session is None:
+
         return jsonify({
-            "error": "authentication required"
+            "error":
+                "authentication required"
         }), 401
 
-    result = analyze_session(session)
+    result = analyze_session(
+        session
+    )
 
     return jsonify(result), 200
