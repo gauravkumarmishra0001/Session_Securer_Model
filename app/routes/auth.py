@@ -1,3 +1,4 @@
+
 from flask import (
     Blueprint,
     request,
@@ -23,7 +24,18 @@ from app.services.session_service import (
     revoke_session
 )
 
-from app.services.event_service import record_login_event
+from app.services.event_service import (
+    record_login_event
+)
+
+from app.services.detection_service import (
+    analyze_session
+)
+
+from app.services.prevention_service import (
+    determine_prevention_action,
+    create_otp_challenge
+)
 
 
 auth_bp = Blueprint(
@@ -46,6 +58,7 @@ def user_to_dict(user):
     methods=["POST"]
 )
 def register():
+
     data = request.get_json(
         silent=True
     ) or {}
@@ -103,6 +116,7 @@ def register():
     methods=["POST"]
 )
 def login():
+
     data = request.get_json(
         silent=True
     ) or {}
@@ -152,7 +166,93 @@ def login():
         ]
     )
 
+    # Record the login before detection.
     record_login_event(session)
+
+    # --------------------------------------------------------
+    # PHASE 4: DETECTION + PREVENTION
+    # --------------------------------------------------------
+
+    detection_result = analyze_session(
+        session
+    )
+
+    action = determine_prevention_action(
+        detection_result
+    )
+
+    # --------------------------------------------------------
+    # HIGH RISK -> BLOCK
+    # --------------------------------------------------------
+
+    if action == "BLOCK":
+
+        revoke_session(session)
+
+        return jsonify({
+            "error": "login blocked",
+            "reason": "high risk session",
+            "classification": detection_result.get(
+                "classification"
+            ),
+            "ml_classification": detection_result.get(
+                "ml_classification"
+            )
+        }), 403
+
+    # --------------------------------------------------------
+    # UNUSUAL -> OTP VERIFICATION
+    # --------------------------------------------------------
+
+    if action == "VERIFY":
+
+        # Keep session inactive until OTP succeeds.
+        revoke_session(session)
+
+        challenge, otp = create_otp_challenge(
+            session
+        )
+
+        data = {
+            "message": "additional verification required",
+            "session_id": session.id,
+            "otp_id": challenge.id,
+            "classification": detection_result.get(
+                "classification"
+            )
+        }
+
+        # Development/testing convenience.
+        # Production should deliver OTP through
+        # email/SMS/authenticator instead.
+        if current_app.testing:
+            data["otp"] = otp
+
+        response = jsonify(data)
+
+        # Keep the token in the browser cookie.
+        # The database session remains revoked until
+        # OTP verification succeeds.
+        response.set_cookie(
+            current_app.config[
+                "SESSION_COOKIE_NAME"
+            ],
+            raw_token,
+            max_age=current_app.config[
+                "SESSION_TTL_SECONDS"
+            ],
+            httponly=True,
+            samesite="Strict",
+            secure=current_app.config[
+                "SESSION_COOKIE_SECURE"
+            ]
+        )
+
+        return response, 202
+
+    # --------------------------------------------------------
+    # NORMAL -> ALLOW
+    # --------------------------------------------------------
 
     response = jsonify({
         "message": "login successful",
@@ -183,6 +283,7 @@ def login():
     methods=["GET"]
 )
 def me():
+
     token = request.cookies.get(
         current_app.config[
             "SESSION_COOKIE_NAME"
@@ -215,6 +316,7 @@ def me():
     methods=["POST"]
 )
 def logout():
+
     token = request.cookies.get(
         current_app.config[
             "SESSION_COOKIE_NAME"
