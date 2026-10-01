@@ -1,98 +1,110 @@
 # Session Securer Model
 
-## Phase 1: Secure Authentication and Session Management
+## AI-Based Unusual Login and Session Security Detection System
 
-Session Securer Model is a defensive security prototype designed to collect and manage authentication and session information for future behavioral security analysis.
+This project is an AI-based security system for detecting unusual login and session activity, calculating risk, preventing suspicious sessions, and providing security monitoring.
 
-## Phase 1 Objectives
+# Phase 1 — Working Login System
 
-- User registration
-- Secure password hashing
-- User authentication
+Features:
+- Register/login
+- Password hashing
 - Session creation
-- Session expiration
-- Device information collection
-- Active session management
-- Session revocation
-- Logout
-- Automated testing
+- Device information
+- Session management
 
-## Architecture
+Status: Completed.
+
+# Phase 2 — Detection
+
+Features:
+- Collect login/session features
+- Build normal user profile
+- Calculate anomaly score
+- Detect unusual devices/locations
+
+Status: Completed.
+
+# Phase 3 — ML
+
+Features:
+- Generate training data
+- Train Isolation Forest
+- Optional Autoencoder
+- Risk scoring
+
+Status: Completed.
+
+# Phase 4 — Prevention
+
+Features:
+- Allow normal login
+- Require OTP/2FA for suspicious login
+- Block high-risk sessions
+- Revoke suspicious sessions
+
+Status: Completed.
+
+# Phase 5 — Dashboard
+
+Features:
+- Active sessions
+- Login history
+- Risk scores
+- Blocked attempts
+- Device/location information
+- Security alerts
+
+Status: Completed.
+
+# Complete Project Flow
 
 Authentication
-    ↓
+Session Creation
 Session Events
-    ↓
-User Behavior + Global Patterns
-    ↓
 Feature Engineering
-    ↓
+Behavioural Detection
 Machine Learning
-    ↓
-Risk Engine
-    ↓
+Risk Scoring
 ALLOW / VERIFY / BLOCK
+OTP Verification
+Session Revocation
+Security Alerts
+Security Dashboard
 
-Machine learning is intentionally not implemented in Phase 1.
+# Technology Stack
 
-## Technology Stack
+Python
+Flask
+Flask-SQLAlchemy
+SQLite
+Scikit-learn
+Pandas
+NumPy
+Joblib
+Pytest
+Git
+GitHub
 
-- Python
-- Flask
-- Flask-SQLAlchemy
-- SQLite
-- Werkzeug password hashing
-- user-agents
-- pytest
+# Testing
 
-## API Endpoints
-
-### Register
-
-POST `/api/auth/register`
-
-### Login
-
-POST `/api/auth/login`
-
-### Current User / Session
-
-GET `/api/auth/me`
-
-### Logout
-
-POST `/api/auth/logout`
-
-### List Active Sessions
-
-GET `/api/sessions`
-
-### Revoke Session
-
-DELETE `/api/sessions/<session_id>`
-
-## Security Features
-
-- Passwords are stored using secure password hashing.
-- Authentication uses session tokens.
-- Session tokens are stored in hashed form in the database.
-- Session cookies are HttpOnly.
-- Session cookies use SameSite=Strict.
-- Sessions have an expiration time.
-- Sessions can be revoked.
-- Device information is collected from the User-Agent.
-- Logout invalidates the current session.
-
-## Testing
+The project contains automated tests for authentication, session management, detection, machine learning, prevention, OTP verification, and dashboard functionality.
 
 Run:
 
-python -m pytest -q
+pytest -q
 
-Expected result:
+# Project Status
 
-4 passed
+Phase 1 — Working Login System — Completed
+Phase 2 — Detection — Completed
+Phase 3 — Machine Learning — Completed
+Phase 4 — Prevention — Completed
+Phase 5 — Dashboard — Completed
 
-## Phase 1 Status
+# Author
 
-Phase 1 authentication and session management implementation is complete.
+Gaurav Kumar Mishra
+
+GitHub: https://github.com/gauravkumarmishra0001
+Repository: https://github.com/gauravkumarmishra0001/Session_Securer_Model
