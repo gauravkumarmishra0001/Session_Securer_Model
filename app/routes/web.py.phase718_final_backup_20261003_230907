@@ -386,10 +386,6 @@ footer {
             Register
         </a>
 
-        <a href="/logout" data-page="logout">
-            Logout
-        </a>
-
     </nav>
 
 </aside>
@@ -651,9 +647,3 @@ def terms_page():
 @web_bp.route("/privacy", methods=["GET"])
 def privacy_page():
     return render_page()
-
-
-@web_bp.route("/logout", methods=["GET"])
-def logout_page():
-    session.clear()
-    return redirect(url_for("web.login_page"))

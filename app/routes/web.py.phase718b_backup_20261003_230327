@@ -1,5 +1,5 @@
 
-from flask import Blueprint, Response, session, redirect, url_for
+from flask import Blueprint, Response
 
 
 web_bp = Blueprint("web", __name__)
@@ -386,10 +386,6 @@ footer {
             Register
         </a>
 
-        <a href="/logout" data-page="logout">
-            Logout
-        </a>
-
     </nav>
 
 </aside>
@@ -618,8 +614,6 @@ def register_page():
 
 @web_bp.route("/dashboard", methods=["GET"])
 def dashboard_page():
-    if not session.get("user_id"):
-        return redirect(url_for("web.login_page"))
     return render_page()
 
 
@@ -651,9 +645,3 @@ def terms_page():
 @web_bp.route("/privacy", methods=["GET"])
 def privacy_page():
     return render_page()
-
-
-@web_bp.route("/logout", methods=["GET"])
-def logout_page():
-    session.clear()
-    return redirect(url_for("web.login_page"))
