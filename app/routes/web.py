@@ -1,712 +1,744 @@
-from flask import Blueprint, Response
 
+from flask import Blueprint, render_template_string
 
-web_bp = Blueprint(
-    "web",
-    __name__
-)
+web_bp = Blueprint("web", __name__)
 
-
-HOME_PAGE = r"""
-<!doctype html>
-<html lang="en">
-
-<head>
-
-<meta charset="utf-8">
-
-<meta name="viewport"
-      content="width=device-width, initial-scale=1">
-
-<title>Session Securer</title>
-
+BASE_STYLE = """
 <style>
-
-body {
-    margin: 0;
-    background: #0b1014;
-    color: #e5edf1;
-    font-family: Arial, Helvetica, sans-serif;
+:root{
+    --bg:#080d11;
+    --panel:#0d151a;
+    --panel2:#111b21;
+    --line:#24343d;
+    --line2:#36505b;
+    --text:#dce7eb;
+    --muted:#83959e;
+    --cyan:#54c6d8;
+    --green:#70b995;
+    --amber:#d2a85d;
+    --red:#d66f72;
+    --blue:#75a9d6;
+    --font:"IBM Plex Mono","Cascadia Mono","SFMono-Regular",Consolas,monospace;
 }
 
-header {
-    border-bottom: 1px solid #26343d;
-    background: #0d1419;
+*{box-sizing:border-box}
+
+html{
+    background:var(--bg);
+    color:var(--text);
 }
 
-nav {
-    max-width: 1100px;
-    margin: auto;
-    padding: 20px 24px;
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font);
+    line-height:1.55;
 }
 
-.logo {
-    font-weight: bold;
-    letter-spacing: .12em;
+a{
+    color:var(--text);
+    text-decoration:none;
 }
 
-.links {
-    display: flex;
-    gap: 20px;
+button,input{
+    font:inherit;
 }
 
-a {
-    color: #55c7d9;
-    text-decoration: none;
+button{
+    cursor:pointer;
 }
 
-main {
-    max-width: 1100px;
-    margin: auto;
-    padding: 80px 24px;
+.nav{
+    min-height:64px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 5vw;
+    background:#091015;
+    position:sticky;
+    top:0;
+    z-index:20;
 }
 
-.eyebrow {
-    color: #55c7d9;
-    font-size: 13px;
-    letter-spacing: .15em;
-    text-transform: uppercase;
+.brand{
+    font-weight:700;
+    letter-spacing:.08em;
 }
 
-h1 {
-    font-size: 64px;
-    line-height: 1;
-    max-width: 850px;
+.navlinks{
+    display:flex;
+    gap:22px;
+    align-items:center;
+    flex-wrap:wrap;
 }
 
-p {
-    color: #8b9aa4;
-    line-height: 1.7;
-    max-width: 760px;
+.navlinks a{
+    color:var(--muted);
+    font-size:13px;
 }
 
-.actions {
-    margin-top: 30px;
+.navlinks a:hover{
+    color:var(--text);
 }
 
-button {
-    background: #131c22;
-    color: #e5edf1;
-    border: 1px solid #26343d;
-    padding: 13px 18px;
-    margin-right: 8px;
-    cursor: pointer;
+.container{
+    width:min(1180px,90vw);
+    margin:0 auto;
 }
 
-button:hover {
-    border-color: #55c7d9;
-    color: #55c7d9;
+.hero{
+    padding:90px 0 70px;
+    border-bottom:1px solid var(--line);
 }
 
-.panel {
-    margin-top: 70px;
-    border: 1px solid #26343d;
-    background: #11181e;
-    padding: 28px;
+.kicker{
+    color:var(--cyan);
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
 }
 
-footer {
-    border-top: 1px solid #26343d;
-    padding: 30px 24px;
-    color: #8b9aa4;
+h1{
+    font-size:clamp(32px,6vw,72px);
+    line-height:1.02;
+    margin:16px 0;
+    max-width:900px;
 }
 
-footer div {
-    max-width: 1100px;
-    margin: auto;
+h2{
+    font-size:24px;
+    margin:0 0 14px;
 }
 
+h3{
+    font-size:16px;
+}
+
+.lead{
+    max-width:760px;
+    color:var(--muted);
+    font-size:16px;
+}
+
+.actions{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-top:30px;
+}
+
+.btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    padding:0 18px;
+    border:1px solid var(--line2);
+    background:#101a20;
+    color:var(--text);
+}
+
+.btn.primary{
+    background:#15333a;
+    border-color:#397784;
+    color:#dff8fc;
+}
+
+.btn.danger{
+    background:#321b1d;
+    border-color:#754247;
+}
+
+.section{
+    padding:65px 0;
+    border-bottom:1px solid var(--line);
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+}
+
+.panel{
+    border:1px solid var(--line);
+    background:var(--panel);
+    padding:22px;
+}
+
+.panel p{
+    color:var(--muted);
+}
+
+.metric-grid{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;
+}
+
+.metric{
+    border:1px solid var(--line);
+    background:var(--panel);
+    padding:18px;
+}
+
+.metric-value{
+    font-size:25px;
+    margin-top:8px;
+}
+
+.label{
+    color:var(--muted);
+    font-size:12px;
+}
+
+form{
+    max-width:520px;
+}
+
+.field{
+    margin-bottom:15px;
+}
+
+label{
+    display:block;
+    color:var(--muted);
+    font-size:12px;
+    margin-bottom:7px;
+}
+
+input{
+    width:100%;
+    min-height:46px;
+    border:1px solid var(--line2);
+    background:#091116;
+    color:var(--text);
+    padding:10px 12px;
+    outline:none;
+}
+
+input:focus{
+    border-color:var(--cyan);
+}
+
+.notice{
+    border:1px solid var(--line);
+    background:#0c1419;
+    padding:15px;
+    margin:15px 0;
+}
+
+.success{
+    color:var(--green);
+}
+
+.warning{
+    color:var(--amber);
+}
+
+.error{
+    color:var(--red);
+}
+
+.muted{
+    color:var(--muted);
+}
+
+pre{
+    overflow:auto;
+    border:1px solid var(--line);
+    background:#070c10;
+    padding:16px;
+    color:#b9ccd3;
+}
+
+footer{
+    padding:35px 0;
+    color:var(--muted);
+    font-size:12px;
+}
+
+.skeleton{
+    min-height:18px;
+    background:#17232a;
+    margin:8px 0;
+}
+
+@media(max-width:800px){
+    .nav{
+        padding:12px 5vw;
+        align-items:flex-start;
+        gap:12px;
+        flex-direction:column;
+    }
+
+    .navlinks{
+        gap:12px;
+    }
+
+    .hero{
+        padding:60px 0 45px;
+    }
+
+    .grid,
+    .metric-grid{
+        grid-template-columns:1fr;
+    }
+
+    h1{
+        font-size:40px;
+    }
+
+    .btn{
+        width:100%;
+    }
+
+    .actions{
+        flex-direction:column;
+    }
+}
 </style>
+"""
 
-</head>
-
-<body>
-
-<header>
-
-<nav>
-
-<div class="logo">
-SESSION SECURER
-</div>
-
-<div class="links">
-
-<a href="/">
-Home
-</a>
-
-<a href="/social">
-Social Lab
-</a>
-
-<a href="/dashboard">
-Dashboard
-</a>
-
-</div>
-
+NAV = """
+<nav class="nav">
+  <a class="brand" href="/">SESSION SECURER</a>
+  <div class="navlinks">
+    <a href="/">Home</a>
+    <a href="/how-it-works">How it works</a>
+    <a href="/social">Social Lab</a>
+    <a href="/events">Events</a>
+    <a href="/sessions">Sessions</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/login">Login</a>
+    <a href="/register">Register</a>
+  </div>
 </nav>
+"""
 
-</header>
-
-
-<main>
-
-<div class="eyebrow">
-Defensive Authentication Platform
-</div>
-
-<h1>
-Session security with detection and response.
-</h1>
-
-<p>
-Session Securer combines authentication, session telemetry,
-behavior analysis, risk scoring and prevention controls
-into one defensive security platform.
-</p>
-
-<div class="actions">
-
-<a href="/social">
-<button>
-Open Social Security Lab
-</button>
-</a>
-
-<a href="/dashboard">
-<button>
-Open Security Dashboard
-</button>
-</a>
-
-</div>
-
-
-<div class="panel">
-
-<h2>
-Security Pipeline
-</h2>
-
-<p>
-Authentication → Session Events → Detection →
-Risk Analysis → Prevention → Monitoring
-</p>
-
-<p>
-Phase 6 provides a controlled simulated social platform
-for security testing without requiring private telemetry
-from external social networks.
-</p>
-
-</div>
-
-</main>
-
-
+FOOTER = """
 <footer>
-
-<div>
-
-<a href="/terms">
-Terms of Service
-</a>
-
-&nbsp; | &nbsp;
-
-<a href="/privacy">
-Privacy Policy
-</a>
-
-<p>
-This project uses defense-in-depth security principles.
-No software system can honestly guarantee absolute security.
-</p>
-
-</div>
-
+  <div class="container">
+    <div>Session Securer</div>
+    <div>Defensive session security prototype</div>
+    <div style="margin-top:10px">
+      <a href="/terms">Terms of Service</a> ·
+      <a href="/privacy">Privacy Policy</a>
+    </div>
+  </div>
 </footer>
+"""
 
+HOME = """
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session Securer</title>
+""" + BASE_STYLE + """
+</head>
+<body>
+""" + NAV + """
+<main>
+<section class="hero">
+<div class="container">
+<div class="kicker">Session security platform</div>
+<h1>Detect suspicious sessions before they become incidents.</h1>
+<p class="lead">
+Session Securer combines authentication, session telemetry,
+behavior analysis, risk scoring and response controls in one defensive system.
+</p>
+<div class="actions">
+<a class="btn primary" href="/register">Create account</a>
+<a class="btn" href="/social">Open security lab</a>
+<a class="btn" href="/how-it-works">View architecture</a>
+</div>
+</div>
+</section>
+
+<section class="section">
+<div class="container">
+<div class="grid">
+<div class="panel">
+<h2>Authentication</h2>
+<p>Account registration, password hashing, login and secure session creation.</p>
+</div>
+<div class="panel">
+<h2>Detection</h2>
+<p>Session events provide the data used for behavioral analysis and anomaly detection.</p>
+</div>
+<div class="panel">
+<h2>Risk engine</h2>
+<p>Rule-based and machine-learning signals can contribute to session risk assessment.</p>
+</div>
+<div class="panel">
+<h2>Response</h2>
+<p>Normal activity can proceed while suspicious activity can require verification or blocking.</p>
+</div>
+</div>
+</div>
+</section>
+
+<section class="section">
+<div class="container">
+<div class="kicker">Defense in depth</div>
+<h2>One system, multiple security layers.</h2>
+<p class="lead">
+Authentication, session management, detection, machine-learning analysis,
+prevention and monitoring work together rather than relying on one control.
+</p>
+</div>
+</section>
+</main>
+""" + FOOTER + """
 </body>
-
 </html>
 """
 
-
-SOCIAL_PAGE = r"""
+AUTH_PAGE = """
 <!doctype html>
-
-<html lang="en">
-
+<html>
 <head>
-
-<meta charset="utf-8">
-
-<meta name="viewport"
-      content="width=device-width, initial-scale=1">
-
-<title>Social Security Lab</title>
-
-<style>
-
-body {
-    margin: 0;
-    background: #0b1014;
-    color: #e5edf1;
-    font-family: Arial, Helvetica, sans-serif;
-}
-
-main {
-    max-width: 1050px;
-    margin: auto;
-    padding: 50px 24px;
-}
-
-a {
-    color: #55c7d9;
-    text-decoration: none;
-}
-
-.panel {
-    border: 1px solid #26343d;
-    background: #11181e;
-    padding: 25px;
-    margin-top: 25px;
-}
-
-button {
-    background: #151e25;
-    color: #e5edf1;
-    border: 1px solid #26343d;
-    padding: 13px 18px;
-    margin: 5px;
-    cursor: pointer;
-}
-
-button:hover {
-    border-color: #55c7d9;
-    color: #55c7d9;
-}
-
-.event {
-    border-top: 1px solid #26343d;
-    padding: 18px 0;
-}
-
-.normal {
-    color: #75c99b;
-}
-
-.unusual {
-    color: #d6bd6d;
-}
-
-.highrisk {
-    color: #df7777;
-}
-
-#loading {
-    display: none;
-    color: #8b9aa4;
-}
-
-</style>
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title }} · Session Securer</title>
+""" + BASE_STYLE + """
 </head>
-
-
 <body>
-
-<main>
-
-<a href="/">
-← Home
-</a>
-
-<h1>
-Social Security Lab
-</h1>
-
-<p>
-Run controlled security scenarios and observe the resulting
-security telemetry.
-</p>
-
-
+""" + NAV + """
+<main class="section">
+<div class="container">
 <div class="panel">
+<div class="kicker">{{ title }}</div>
+<h1 style="font-size:38px">{{ title }}</h1>
 
-<h2>
-Security Scenarios
-</h2>
+<div id="message" class="notice muted">Ready.</div>
 
-<button onclick="runScenario('/api/social/simulate/normal')">
-Normal Login
+<form id="authForm">
+{% if register %}
+<div class="field">
+<label>Username</label>
+<input id="username" autocomplete="username" required>
+</div>
+{% endif %}
+
+<div class="field">
+<label>Email</label>
+<input id="email" type="email" autocomplete="email" required>
+</div>
+
+<div class="field">
+<label>Password</label>
+<input id="password" type="password" autocomplete="{{ 'new-password' if register else 'current-password' }}" required>
+</div>
+
+<button class="btn primary" type="submit">
+{{ "Create account" if register else "Sign in" }}
 </button>
-
-<button onclick="runScenario('/api/social/simulate/new-device')">
-New Device
-</button>
-
-<button onclick="runScenario('/api/social/simulate/high-risk')">
-High Risk
-</button>
-
+</form>
 </div>
-
-
-<div class="panel">
-
-<h2>
-Security Events
-</h2>
-
-<div id="loading">
-Loading security telemetry...
 </div>
-
-<div id="events">
-</div>
-
-</div>
-
 </main>
 
-
 <script>
+const form=document.getElementById("authForm");
+const msg=document.getElementById("message");
 
-function escapeHtml(value) {
+form.addEventListener("submit",async(e)=>{
+    e.preventDefault();
 
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
+    msg.className="notice muted";
+    msg.textContent="Authenticating...";
 
+    const payload={
+        email:document.getElementById("email").value,
+        password:document.getElementById("password").value
+    };
 
-async function runScenario(endpoint) {
+    {% if register %}
+    payload.username=document.getElementById("username").value;
+    const endpoint="/api/auth/register";
+    {% else %}
+    const endpoint="/api/auth/login";
+    {% endif %}
 
-    document.getElementById(
-        "loading"
-    ).style.display = "block";
+    try{
+        const response=await fetch(endpoint,{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            credentials:"same-origin",
+            body:JSON.stringify(payload)
+        });
 
-    try {
+        const data=await response.json().catch(()=>({}));
 
-        const response = await fetch(
-            endpoint,
-            {
-                method: "POST"
-            }
-        );
-
-        await response.json();
-
-        await loadEvents();
-
-    } catch (error) {
-
-        document.getElementById(
-            "events"
-        ).innerHTML =
-            "<p>Unable to execute scenario.</p>";
-    }
-
-    document.getElementById(
-        "loading"
-    ).style.display = "none";
-}
-
-
-async function loadEvents() {
-
-    const box =
-        document.getElementById("events");
-
-    box.innerHTML =
-        "<div class='event'>Loading...</div>";
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/social/events"
-            );
-
-        const data =
-            await response.json();
-
-        if (
-            !data.events ||
-            data.events.length === 0
-        ) {
-
-            box.innerHTML =
-                "<p>No events recorded yet.</p>";
-
+        if(!response.ok){
+            msg.className="notice error";
+            msg.textContent=data.error || data.message || "Request failed.";
             return;
         }
 
+        msg.className="notice success";
+        msg.textContent="{{ 'Account created. Redirecting to login...' if register else 'Login successful. Redirecting...' }}";
 
-        box.innerHTML =
-            data.events.map(
-                function(event) {
+        setTimeout(()=>{
+            window.location.href="{{ '/login' if register else '/dashboard' }}";
+        },700);
 
-                    let classification =
-                        String(
-                            event.classification || ""
-                        );
-
-                    let className =
-                        classification === "NORMAL"
-                        ? "normal"
-                        : classification === "UNUSUAL"
-                        ? "unusual"
-                        : "highrisk";
-
-                    let score =
-                        event.risk_score === null
-                        ? "N/A"
-                        : Number(
-                            event.risk_score
-                          ).toFixed(2);
-
-                    return `
-                        <div class="event">
-
-                            <strong>
-                                ${escapeHtml(
-                                    event.event_type
-                                )}
-                            </strong>
-
-                            <p>
-                                Classification:
-                                <span class="${className}">
-                                    ${escapeHtml(
-                                        classification
-                                    )}
-                                </span>
-                            </p>
-
-                            <p>
-                                Risk Score: ${score}
-                            </p>
-
-                            <p>
-                                Action:
-                                ${escapeHtml(
-                                    event.action
-                                )}
-                            </p>
-
-                            <p>
-                                Device:
-                                ${escapeHtml(
-                                    event.device_type ||
-                                    "Unknown"
-                                )}
-                            </p>
-
-                            <p>
-                                Location:
-                                ${escapeHtml(
-                                    event.location ||
-                                    "Unknown"
-                                )}
-                            </p>
-
-                        </div>
-                    `;
-                }
-            ).join("");
-
-    } catch (error) {
-
-        box.innerHTML =
-            "<p>Unable to load events.</p>";
+    }catch(error){
+        msg.className="notice error";
+        msg.textContent="Network error. Please try again.";
     }
-}
-
-
-loadEvents();
-
+});
 </script>
-
+""" + FOOTER + """
 </body>
-
 </html>
 """
 
-
-TERMS_PAGE = r"""
+INFO_PAGE = """
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>Terms of Service</title>
-
-<style>
-
-body {
-    background:#0b1014;
-    color:#e5edf1;
-    font-family:Arial,Helvetica,sans-serif;
-    max-width:900px;
-    margin:auto;
-    padding:50px 24px;
-    line-height:1.7;
-}
-
-a {
-    color:#55c7d9;
-}
-
-</style>
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title }} · Session Securer</title>
+""" + BASE_STYLE + """
 </head>
-
 <body>
-
-<a href="/">
-← Home
-</a>
-
-<h1>
-Terms of Service
-</h1>
-
-<h2>
-Authorized Use
-</h2>
-
-<p>
-Session Securer is a defensive security research and
-demonstration platform. Users must only test systems,
-accounts and infrastructure that they own or are
-authorized to assess.
-</p>
-
-<h2>
-Security
-</h2>
-
-<p>
-The project uses defense-in-depth controls. No software
-system can guarantee absolute protection against every
-possible vulnerability or attack.
-</p>
-
+""" + NAV + """
+<main class="section">
+<div class="container">
+<div class="kicker">Session Securer</div>
+<h1 style="font-size:42px">{{ title }}</h1>
+<div class="panel">
+{{ body|safe }}
+</div>
+</div>
+</main>
+""" + FOOTER + """
 </body>
 </html>
 """
 
-
-PRIVACY_PAGE = r"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>Privacy Policy</title>
-
-<style>
-
-body {
-    background:#0b1014;
-    color:#e5edf1;
-    font-family:Arial,Helvetica,sans-serif;
-    max-width:900px;
-    margin:auto;
-    padding:50px 24px;
-    line-height:1.7;
-}
-
-a {
-    color:#55c7d9;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<a href="/">
-← Home
-</a>
-
-<h1>
-Privacy Policy
-</h1>
-
-<h2>
-Security Telemetry
-</h2>
-
-<p>
-The application may record authentication and security
-telemetry such as device information, browser information,
-operating system, IP address, location labels, risk scores
-and security decisions.
-</p>
-
-<h2>
-Purpose
-</h2>
-
-<p>
-Telemetry is used for authentication security, anomaly
-detection, risk assessment, prevention and monitoring.
-</p>
-
-<h2>
-Third-Party Platforms
-</h2>
-
-<p>
-The Phase 6 social platform is a controlled simulation.
-It does not claim access to private security telemetry
-from external social networks.
-</p>
-
-</body>
-</html>
-"""
-
-
-@web_bp.get("/")
+@web_bp.route("/")
 def home():
-    return Response(
-        HOME_PAGE,
-        mimetype="text/html"
-    )
+    return HOME
 
+@web_bp.route("/login")
+def login_page():
+    return render_template_string(AUTH_PAGE, title="Sign in", register=False)
 
-@web_bp.get("/social")
-def social():
-    return Response(
-        SOCIAL_PAGE,
-        mimetype="text/html"
-    )
+@web_bp.route("/register")
+def register_page():
+    return render_template_string(AUTH_PAGE, title="Create account", register=True)
 
+@web_bp.route("/social")
+def social_page():
+    return render_template_string(INFO_PAGE, title="Social Security Lab", body="""
+    <p>Use the Social Security Lab to generate controlled security scenarios.</p>
 
-@web_bp.get("/terms")
+    <div class="actions">
+      <button class="btn primary" onclick="runScenario('normal')">Normal login</button>
+      <button class="btn" onclick="runScenario('new-device')">New device</button>
+      <button class="btn danger" onclick="runScenario('high-risk')">High risk</button>
+    </div>
+
+    <div id="result" class="notice muted">No scenario executed.</div>
+
+    <script>
+    async function runScenario(type){
+        const result=document.getElementById("result");
+        result.className="notice muted";
+        result.textContent="Running security scenario...";
+
+        const endpoint="/api/social/simulate/"+type;
+
+        try{
+            const r=await fetch(endpoint,{
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                credentials:"same-origin"
+            });
+
+            const data=await r.json().catch(()=>({}));
+
+            result.className=r.ok ? "notice success" : "notice error";
+            result.textContent=JSON.stringify(data,null,2);
+        }catch(e){
+            result.className="notice error";
+            result.textContent="Request failed.";
+        }
+    }
+    </script>
+    """)
+
+@web_bp.route("/dashboard")
+def dashboard_page():
+    return render_template_string(INFO_PAGE, title="Security Dashboard", body="""
+    <div id="dashboard">
+      <div class="metric-grid">
+        <div class="metric"><div class="label">Active sessions</div><div id="active" class="metric-value"><div class="skeleton"></div></div></div>
+        <div class="metric"><div class="label">Login events</div><div id="logins" class="metric-value"><div class="skeleton"></div></div></div>
+        <div class="metric"><div class="label">Risk assessments</div><div id="risks" class="metric-value"><div class="skeleton"></div></div></div>
+        <div class="metric"><div class="label">Alerts</div><div id="alerts" class="metric-value"><div class="skeleton"></div></div></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" onclick="loadDashboard()">Refresh</button>
+        <button class="btn danger" onclick="logout()">Logout</button>
+      </div>
+
+      <div id="status" class="notice muted">Loading dashboard...</div>
+      <pre id="data">Loading...</pre>
+    </div>
+
+    <script>
+    async function getJSON(url){
+        const r=await fetch(url,{credentials:"same-origin"});
+        if(r.status===401){
+            window.location.href="/login";
+            return null;
+        }
+        return await r.json();
+    }
+
+    async function loadDashboard(){
+        const status=document.getElementById("status");
+        const output=document.getElementById("data");
+
+        status.textContent="Loading security telemetry...";
+
+        try{
+            const summary=await getJSON("/api/dashboard/summary");
+            if(!summary)return;
+
+            document.getElementById("active").textContent=
+                summary.active_sessions ?? summary.active ?? 0;
+
+            document.getElementById("logins").textContent=
+                summary.login_events ?? summary.login_history ?? 0;
+
+            document.getElementById("risks").textContent=
+                summary.risk_assessments ?? summary.risks ?? 0;
+
+            document.getElementById("alerts").textContent=
+                summary.security_alerts ?? summary.alerts ?? 0;
+
+            const routes=[
+                "/api/dashboard/summary",
+                "/api/dashboard/active-sessions",
+                "/api/dashboard/login-history",
+                "/api/dashboard/risk-scores",
+                "/api/dashboard/blocked-attempts",
+                "/api/dashboard/security-alerts"
+            ];
+
+            const results={};
+
+            for(const route of routes){
+                results[route]=await getJSON(route);
+            }
+
+            output.textContent=JSON.stringify(results,null,2);
+            status.className="notice success";
+            status.textContent="Security telemetry loaded.";
+        }catch(e){
+            status.className="notice error";
+            status.textContent="Dashboard request failed.";
+        }
+    }
+
+    async function logout(){
+        await fetch("/api/auth/logout",{
+            method:"POST",
+            credentials:"same-origin"
+        });
+        window.location.href="/login";
+    }
+
+    loadDashboard();
+    </script>
+    """)
+
+@web_bp.route("/sessions")
+def sessions_page():
+    return render_template_string(INFO_PAGE, title="Session Management", body="""
+    <p>Authenticated session management.</p>
+    <div id="sessions" class="notice muted">Loading sessions...</div>
+
+    <script>
+    async function load(){
+        const r=await fetch("/api/sessions",{credentials:"same-origin"});
+        if(r.status===401){
+            location.href="/login";
+            return;
+        }
+
+        const data=await r.json();
+        document.getElementById("sessions").textContent=
+            JSON.stringify(data,null,2);
+    }
+    load();
+    </script>
+    """)
+
+@web_bp.route("/events")
+def events_page():
+    return render_template_string(INFO_PAGE, title="Security Events", body="""
+    <p>Session and simulated social security events.</p>
+    <div id="events" class="notice muted">Loading events...</div>
+
+    <script>
+    async function load(){
+        const r=await fetch("/api/social/events",{credentials:"same-origin"});
+        if(r.status===401){
+            location.href="/login";
+            return;
+        }
+
+        const data=await r.json();
+        document.getElementById("events").textContent=
+            JSON.stringify(data,null,2);
+    }
+    load();
+    </script>
+    """)
+
+@web_bp.route("/how-it-works")
+def how_it_works():
+    return render_template_string(INFO_PAGE, title="How It Works", body="""
+    <h2>01 · Authentication</h2>
+    <p>User credentials are verified and an authenticated session is created.</p>
+
+    <h2>02 · Session telemetry</h2>
+    <p>Security-relevant session events can include device and network information.</p>
+
+    <h2>03 · Detection</h2>
+    <p>Behavioral features are evaluated against available history.</p>
+
+    <h2>04 · Risk analysis</h2>
+    <p>Rule-based and ML signals contribute to risk classification.</p>
+
+    <h2>05 · Prevention</h2>
+    <p>Depending on the security decision, a session can be allowed, challenged or blocked.</p>
+
+    <h2>06 · Monitoring</h2>
+    <p>Security events and assessments are surfaced through the dashboard.</p>
+    """)
+
+@web_bp.route("/terms")
 def terms():
-    return Response(
-        TERMS_PAGE,
-        mimetype="text/html"
-    )
+    return render_template_string(INFO_PAGE, title="Terms of Service", body="""
+    <p>This project is a defensive security prototype.</p>
+    <p>Do not use it to monitor, access or interfere with accounts or systems without authorization.</p>
+    <p>The software is provided for authorized testing, education and security engineering purposes.</p>
+    """)
 
-
-@web_bp.get("/privacy")
+@web_bp.route("/privacy")
 def privacy():
-    return Response(
-        PRIVACY_PAGE,
-        mimetype="text/html"
-    )
+    return render_template_string(INFO_PAGE, title="Privacy Policy", body="""
+    <p>Session Securer may process authentication and security telemetry required for its defensive functionality.</p>
+    <p>Use the system only with appropriate authorization and configure data retention according to your deployment requirements.</p>
+    <p>A production deployment should add a formal retention policy, encryption strategy, access controls and applicable legal notices.</p>
+    """)
