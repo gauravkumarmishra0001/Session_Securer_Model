@@ -788,7 +788,14 @@ async function loadPanel(url, target) {
    headers:{"Accept":"application/json"}
   });
   const text = await response.text();
-  if (!response.ok) throw new Error("HTTP " + response.status);
+  if (!response.ok) {
+      if (response.status === 401) {
+          el.textContent = "Sign in is required to view this information.";
+          el.setAttribute("aria-busy", "false");
+           return false;
+      }
+      throw new Error("HTTP " + response.status);
+  }
   let data;
   try { data = JSON.parse(text); } catch { data = text; }
   el.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);

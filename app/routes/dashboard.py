@@ -207,8 +207,8 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background: #f4f6f8;
-    color: #222;
+    background: #101715;
+    color: #e8f0ec;
 }
 
 header {
@@ -236,11 +236,10 @@ header h1 {
 }
 
 .card {
-    background: white;
+    background: #17221e;
     padding: 20px;
-    border-radius: 10px;
-    box-shadow:
-        0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .card h3 {
@@ -268,13 +267,13 @@ table {
 th,
 td {
     padding: 10px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #40544a;
     text-align: left;
     white-space: nowrap;
 }
 
 th {
-    background: #f1f5f9;
+    background: #203b30;
 }
 
 </style>
@@ -422,12 +421,20 @@ th {
 <script>
 
 function safe(value) {
-    if (value === null ||
-        value === undefined) {
+    if (value === null || value === undefined) {
         return "-";
     }
 
-    return value;
+    return String(value).replace(/[&<>"']/g, function (character) {
+        const entities = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        };
+        return entities[character];
+    });
 }
 
 
