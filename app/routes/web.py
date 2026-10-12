@@ -780,6 +780,61 @@ button{padding:10px 14px;background:#203b30;color:#e8f0ec;border:1px solid #80d9
 <footer class="muted"><p>Security depends on correctly configured controls and deployment.</p></footer>
 <script>
 "use strict";
+
+function renderSummaryPanel(container, data) {
+  container.replaceChildren();
+
+  const entries = data && typeof data === "object" && !Array.isArray(data)
+    ? Object.entries(data)
+    : [["Summary", data]];
+
+  if (entries.length === 0) {
+    const empty = document.createElement("p");
+    empty.textContent = "No summary data is currently available.";
+    container.appendChild(empty);
+    return;
+  }
+
+  const grid = document.createElement("div");
+  grid.style.display = "grid";
+  grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(min(100%, 180px), 1fr))";
+  grid.style.gap = "12px";
+
+  for (const [key, value] of entries) {
+    const item = document.createElement("section");
+    item.style.background = "#17221e";
+    item.style.border = "1px solid #40544a";
+    item.style.padding = "14px";
+    item.style.minWidth = "0";
+
+    const label = document.createElement("h3");
+    label.style.fontSize = "0.9rem";
+    label.style.fontWeight = "500";
+    label.style.overflowWrap = "anywhere";
+    label.textContent = String(key)
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .replace(/[_-]+/g, " ");
+
+    const metric = document.createElement("p");
+    metric.style.fontSize = "1.15rem";
+    metric.style.fontWeight = "600";
+    metric.style.overflowWrap = "anywhere";
+
+    if (value === null || value === undefined || value === "") {
+      metric.textContent = "No data";
+    } else if (typeof value === "object") {
+      metric.textContent = JSON.stringify(value);
+    } else {
+      metric.textContent = String(value);
+    }
+
+    item.append(label, metric);
+    grid.appendChild(item);
+  }
+
+  container.appendChild(grid);
+}
+
 async function loadPanel(url, target) {
  const el = document.getElementById(target);
  try {
@@ -798,7 +853,13 @@ async function loadPanel(url, target) {
   }
   let data;
   try { data = JSON.parse(text); } catch { data = text; }
-  el.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  if (target === "summary") {
+    renderSummaryPanel(el, data);
+  } else {
+    el.textContent = typeof data === "string"
+      ? data
+      : JSON.stringify(data, null, 2);
+  }
   el.setAttribute("aria-busy", "false");
   return true;
  } catch (error) {
