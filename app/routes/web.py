@@ -710,3 +710,126 @@ def privacy():
         PRIVACY_PAGE,
         mimetype="text/html"
     )
+
+
+@web_bp.get("/security-overview")
+def security_overview_718():
+    page = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Security Overview | Session Securer</title>
+<style>
+body{margin:0;background:#101715;color:#e8f0ec;font:16px/1.6 system-ui,sans-serif}
+header,main,footer{width:min(960px,calc(100% - 32px));margin:auto}
+header{padding:22px 0;border-bottom:1px solid #40544a}
+nav{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px}
+a{color:#80d9b2}
+main{padding:28px 0}
+.panel{background:#17221e;border:1px solid #40544a;padding:18px;margin:16px 0;overflow-wrap:anywhere}
+.muted{color:#a7b7af}
+.skeleton{height:14px;background:#2a3932;max-width:520px;margin:12px 0}
+button{padding:10px 14px;background:#203b30;color:#e8f0ec;border:1px solid #80d9b2;cursor:pointer}
+:focus-visible{outline:2px solid #80d9b2;outline-offset:3px}
+@media(max-width:520px){header,main,footer{width:calc(100% - 24px)}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+<strong>SESSION SECURER</strong>
+<p class="muted">Session monitoring and defensive security</p>
+<nav aria-label="Main navigation">
+<a href="/security-overview" aria-current="page">Overview</a>
+<a href="/dashboard">Dashboard</a>
+<a href="/social">Security Lab</a>
+<a href="/terms">Terms</a>
+<a href="/privacy">Privacy</a>
+</nav>
+</header>
+<main>
+<p class="muted">SECURITY / OVERVIEW</p>
+<h1>Security overview</h1>
+<p class="muted">Monitoring information from the application's existing APIs.</p>
+<div id="status" class="panel" role="status" aria-live="polite">Loading monitoring data...</div>
+<section class="panel">
+<h2>Dashboard summary</h2>
+<div id="summary" aria-busy="true">
+<div class="skeleton"></div><div class="skeleton"></div>
+<p class="muted">Loading summary...</p>
+</div>
+</section>
+<section class="panel">
+<h2>Active sessions</h2>
+<pre id="sessions" class="muted">Loading sessions...</pre>
+</section>
+<section class="panel">
+<h2>Security alerts</h2>
+<pre id="alerts" class="muted">Loading alerts...</pre>
+</section>
+<section class="panel">
+<h2>Quick actions</h2>
+<p><a href="/dashboard">Open dashboard</a></p>
+<p><a href="/social">Open Security Lab</a></p>
+<button id="logout" type="button">Log out</button>
+<p id="logout-status" class="muted" role="status" aria-live="polite"></p>
+</section>
+</main>
+<footer class="muted"><p>Security depends on correctly configured controls and deployment.</p></footer>
+<script>
+"use strict";
+async function loadPanel(url, target) {
+ const el = document.getElementById(target);
+ try {
+  const response = await fetch(url, {
+   credentials:"same-origin",
+   headers:{"Accept":"application/json"}
+  });
+  const text = await response.text();
+  if (!response.ok) throw new Error("HTTP " + response.status);
+  let data;
+  try { data = JSON.parse(text); } catch { data = text; }
+  el.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  el.setAttribute("aria-busy", "false");
+  return true;
+ } catch (error) {
+  el.textContent = "Data unavailable: " + error.message;
+  el.setAttribute("aria-busy", "false");
+  return false;
+ }
+}
+(async () => {
+ const results = await Promise.all([
+  loadPanel("/api/dashboard/summary", "summary"),
+  loadPanel("/api/dashboard/active-sessions", "sessions"),
+  loadPanel("/api/dashboard/security-alerts", "alerts")
+ ]);
+ const status = document.getElementById("status");
+ status.textContent = results.every(Boolean)
+  ? "Monitoring data loaded."
+  : "Some endpoints are unavailable. Review the sections below.";
+})();
+document.getElementById("logout").addEventListener("click", async () => {
+ const button = document.getElementById("logout");
+ const message = document.getElementById("logout-status");
+ button.disabled = true;
+ message.textContent = "Signing out...";
+ try {
+  const response = await fetch("/api/auth/logout", {
+   method:"POST", credentials:"same-origin",
+   headers:{"Accept":"application/json"}
+  });
+  if (response.ok) { window.location.assign("/"); return; }
+  message.textContent = "Logout failed with HTTP " + response.status + ".";
+ } catch {
+  message.textContent = "Could not contact the server. Please retry.";
+ } finally {
+  button.disabled = false;
+ }
+});
+</script>
+</body>
+</html>"""
+    return Response(page, mimetype="text/html; charset=utf-8")
