@@ -252,10 +252,12 @@ header h1 {
 }
 
 .section {
-    background: white;
+    background: #17221e;
+    color: #e8f0ec;
+    border: 1px solid #40544a;
     margin-bottom: 25px;
     padding: 20px;
-    border-radius: 10px;
+    border-radius: 0;
     overflow-x: auto;
 }
 
