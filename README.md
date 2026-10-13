@@ -654,3 +654,25 @@ Security note: the current Content Security Policy permits inline scripts and
 styles because the existing pages embed them. This phase does not claim that
 inline CSP allowances are eliminated; moving scripts/styles to static assets
 or introducing nonces requires a separate, tested migration.
+
+## Phase 7.19: Sessions and security events
+
+The Security Center page (`/security-center`) integrates with existing
+session, login-history, alert, event, and logout endpoints. It provides:
+
+- An active-session list with per-session revocation when the API returns
+  a numeric session identifier.
+- Login-history, security-alert, and security-event sections with loading,
+  empty, and error states.
+- A conceptual architecture and detection-flow view.
+- Responsive layout and accessible status announcements.
+- Safe text-node rendering for API-provided content.
+
+The page does not create replacement backend APIs or claim that detection
+is infallible. Session revocation relies on the existing authenticated
+session route and its ownership checks. API payloads vary by application
+configuration; verify each section against real authenticated responses
+before treating the UI as production-ready.
+
+Validation for this phase must include the full existing test suite,
+Python compilation, and Git diff checks before commit and push.

@@ -901,3 +901,387 @@ document.getElementById("logout").addEventListener("click", async () => {
 </body>
 </html>"""
     return Response(page, mimetype="text/html; charset=utf-8")
+
+
+@web_bp.get("/security-center")
+def security_center():
+    """Security Center: sessions, events, and detection-flow overview."""
+    from flask import Response
+
+    page = r"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Security Center | Session Securer</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #101419;
+  --panel: #171d24;
+  --panel2: #1c242d;
+  --line: #303b46;
+  --text: #e8edf2;
+  --muted: #a6b2bf;
+  --accent: #7ec7bd;
+  --danger: #ff9d9d;
+  --focus: #f4d37a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible {
+  outline: 3px solid var(--focus); outline-offset: 3px;
+}
+header {
+  border-bottom: 1px solid var(--line);
+  padding: 1rem clamp(1rem, 4vw, 2.5rem);
+}
+nav {
+  display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+}
+nav a { text-decoration: none; }
+main {
+  max-width: 1240px; margin: auto;
+  padding: 1.5rem clamp(1rem, 4vw, 2.5rem) 3rem;
+}
+h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin-bottom: .3rem; }
+h2 { font-size: 1.2rem; margin-top: 0; }
+.lead, .muted { color: var(--muted); }
+.layout {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem; margin-top: 1.5rem;
+}
+.panel {
+  min-width: 0; padding: 1.2rem; border: 1px solid var(--line);
+  border-radius: 12px; background: var(--panel);
+}
+.wide { grid-column: 1 / -1; }
+.toolbar { display: flex; gap: .6rem; flex-wrap: wrap; }
+button {
+  font: inherit; color: var(--text); cursor: pointer;
+  background: var(--panel2); border: 1px solid var(--line);
+  padding: .55rem .8rem; border-radius: 6px;
+}
+button:hover { border-color: var(--accent); }
+button.danger { border-color: #9d5555; color: var(--danger); }
+.status { min-height: 1.5rem; color: var(--muted); }
+.status.error { color: var(--danger); }
+.list { display: grid; gap: .7rem; }
+.item {
+  padding: .8rem; border: 1px solid var(--line);
+  border-radius: 8px; overflow-wrap: anywhere;
+}
+.item strong { display: block; }
+.skeleton {
+  height: 3.2rem; margin: .65rem 0; border-radius: 6px;
+  background: #252e37;
+}
+dl { display: grid; grid-template-columns: minmax(100px, .4fr) 1fr; gap: .4rem .8rem; }
+dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
+.flow {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .65rem; margin-top: 1rem;
+}
+.step {
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: .85rem; background: var(--panel2); min-width: 0;
+}
+.step b { display: block; margin-bottom: .35rem; }
+footer { border-top: 1px solid var(--line); margin-top: 2rem; padding-top: 1rem; }
+@media (max-width: 760px) {
+  .layout { grid-template-columns: 1fr; }
+  .wide { grid-column: auto; }
+  .flow { grid-template-columns: 1fr 1fr; }
+  dl { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .flow { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+<header>
+  <nav aria-label="Main navigation">
+    <a href="/security-overview">Overview</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/security-center" aria-current="page">Security Center</a>
+    <a href="/terms">Terms</a>
+    <a href="/privacy">Privacy</a>
+    <button id="logout-button" type="button">Log out</button>
+  </nav>
+</header>
+<main>
+  <h1>Security Center</h1>
+  <p class="lead">Review sessions and security activity, and understand the detection flow.</p>
+  <p id="global-status" class="status" role="status" aria-live="polite">Loading security data…</p>
+  <div class="layout">
+    <section class="panel wide" aria-labelledby="sessions-title">
+      <h2 id="sessions-title">Active sessions</h2>
+      <p class="muted">Revoke sessions you no longer recognize. Your current session may also appear here.</p>
+      <div class="toolbar"><button id="refresh-sessions" type="button">Refresh sessions</button></div>
+      <p id="sessions-status" class="status" role="status" aria-live="polite">Loading sessions…</p>
+      <div id="sessions-list" class="list">
+        <div class="skeleton" aria-hidden="true"></div>
+        <div class="skeleton" aria-hidden="true"></div>
+      </div>
+    </section>
+    <section class="panel" aria-labelledby="history-title">
+      <h2 id="history-title">Login history</h2>
+      <p id="history-status" class="status" role="status" aria-live="polite">Loading history…</p>
+      <div id="history-list" class="list"><div class="skeleton" aria-hidden="true"></div></div>
+    </section>
+    <section class="panel" aria-labelledby="alerts-title">
+      <h2 id="alerts-title">Security alerts</h2>
+      <p id="alerts-status" class="status" role="status" aria-live="polite">Loading alerts…</p>
+      <div id="alerts-list" class="list"><div class="skeleton" aria-hidden="true"></div></div>
+    </section>
+    <section class="panel wide" aria-labelledby="events-title">
+      <h2 id="events-title">Security events</h2>
+      <p id="events-status" class="status" role="status" aria-live="polite">Loading events…</p>
+      <div id="events-list" class="list"><div class="skeleton" aria-hidden="true"></div></div>
+    </section>
+    <section class="panel wide" aria-labelledby="flow-title">
+      <h2 id="flow-title">Architecture and detection flow</h2>
+      <p class="muted">Conceptual overview of the application's security lifecycle. Actual behavior depends on configured services and policies.</p>
+      <div class="flow" aria-label="Security detection flow">
+        <div class="step"><b>1. Request</b><span class="muted">Browser sends a request and session cookie.</span></div>
+        <div class="step"><b>2. Validation</b><span class="muted">Server resolves the session and checks access.</span></div>
+        <div class="step"><b>3. Detection</b><span class="muted">Configured risk and security checks evaluate activity.</span></div>
+        <div class="step"><b>4. Response</b><span class="muted">Application permits, challenges, blocks, logs, or revokes as configured.</span></div>
+      </div>
+    </section>
+  </div>
+  <footer class="muted">
+    Security Center displays information returned by this application's existing APIs.
+    It does not independently guarantee that a session or device is safe.
+  </footer>
+</main>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+
+function status(id, message, isError=false) {
+  const node = $(id);
+  node.textContent = message;
+  node.classList.toggle("error", Boolean(isError));
+}
+function asArray(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  for (const key of ["sessions", "items", "events", "alerts", "history", "data", "results"]) {
+    if (Array.isArray(payload[key])) return payload[key];
+  }
+  return [];
+}
+function safeText(value) {
+  if (value === null || value === undefined || typeof value === "object") return "";
+  return String(value).slice(0, 500);
+}
+function field(obj, names) {
+  for (const name of names) {
+    if (obj && obj[name] !== undefined && obj[name] !== null) {
+      const value = safeText(obj[name]);
+      if (value) return value;
+    }
+  }
+  return "";
+}
+function card(title, details) {
+  const article = document.createElement("article");
+  article.className = "item";
+  const heading = document.createElement("strong");
+  heading.textContent = title || "Activity";
+  article.appendChild(heading);
+  for (const detail of details) {
+    if (!detail) continue;
+    const line = document.createElement("div");
+    line.textContent = detail;
+    article.appendChild(line);
+  }
+  return article;
+}
+function showEmptyOrError(containerId, message) {
+  const node = $(containerId);
+  node.replaceChildren(card(message, []));
+}
+async function getJson(url) {
+  const response = await fetch(url, {
+    method: "GET",
+    credentials: "same-origin",
+    headers: { "Accept": "application/json" }
+  });
+  let data = null;
+  try { data = await response.json(); } catch (_) {}
+  if (!response.ok) {
+    const error = new Error(
+      response.status === 401 ? "Authentication required. Please sign in again." :
+      response.status === 403 ? "Access denied." :
+      "Request failed (HTTP " + response.status + ")."
+    );
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+async function loadList({url, containerId, statusId, label, titleFields, detailFields}) {
+  const container = $(containerId);
+  status(statusId, "Loading " + label + "…");
+  container.replaceChildren();
+  try {
+    const payload = await getJson(url);
+    const items = asArray(payload);
+    if (!items.length) {
+      status(statusId, "No " + label + " returned.");
+      showEmptyOrError(containerId, "No " + label + " available.");
+      return;
+    }
+    for (const item of items.slice(0, 100)) {
+      const title = field(item, titleFields) || label;
+      const details = detailFields.map(names => field(item, names)).filter(Boolean);
+      container.appendChild(card(title, details));
+    }
+    status(statusId, items.length + " record(s) loaded.");
+  } catch (error) {
+    status(statusId, error.message || "Could not load " + label + ".", true);
+    showEmptyOrError(containerId, error.message || "Unable to load " + label + ".");
+  }
+}
+async function loadSessions() {
+  const container = $("sessions-list");
+  status("sessions-status", "Loading sessions…");
+  container.replaceChildren();
+  try {
+    // Use the existing sessions blueprint endpoint.
+    const payload = await getJson("/api/sessions");
+    const sessions = asArray(payload);
+    if (!sessions.length) {
+      status("sessions-status", "No active sessions returned.");
+      showEmptyOrError("sessions-list", "No active sessions available.");
+      return;
+    }
+    for (const session of sessions.slice(0, 100)) {
+      const id = field(session, ["id", "session_id"]);
+      const details = [
+        field(session, ["device_type", "device", "device_info", "user_agent"]),
+        field(session, ["browser"]),
+        field(session, ["ip_address", "ip", "ip_address_masked"]),
+        field(session, ["created_at", "issued_at", "login_at"]),
+        field(session, ["last_seen", "last_seen_at", "last_activity"])
+      ].filter(Boolean);
+      const article = card(id ? "Session " + id : "Active session", details);
+      if (id && /^\d+$/.test(id)) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "danger";
+        button.textContent = "Revoke session";
+        button.setAttribute("aria-label", "Revoke session " + id);
+        button.addEventListener("click", async () => {
+          if (!window.confirm("Revoke session " + id + "? This action cannot be undone.")) return;
+          button.disabled = true;
+          status("sessions-status", "Revoking session…");
+          try {
+            const response = await fetch("/api/sessions/" + encodeURIComponent(id), {
+              method: "DELETE",
+              credentials: "same-origin",
+              headers: { "Accept": "application/json" }
+            });
+            if (!response.ok) {
+              throw new Error(
+                response.status === 401 ? "Authentication required." :
+                response.status === 403 ? "Access denied." :
+                response.status === 404 ? "Session not found." :
+                "Revocation failed (HTTP " + response.status + ")."
+              );
+            }
+            status("sessions-status", "Session revocation requested successfully.");
+            await loadSessions();
+          } catch (error) {
+            status("sessions-status", error.message || "Could not revoke session.", true);
+            button.disabled = false;
+          }
+        });
+        article.appendChild(button);
+      } else {
+        const note = document.createElement("div");
+        note.className = "muted";
+        note.textContent = "A session identifier was not supplied, so revocation is unavailable for this record.";
+        article.appendChild(note);
+      }
+      container.appendChild(article);
+    }
+    status("sessions-status", sessions.length + " session record(s) loaded.");
+  } catch (error) {
+    status("sessions-status", error.message || "Could not load sessions.", true);
+    showEmptyOrError("sessions-list", error.message || "Unable to load sessions.");
+  }
+}
+async function logout() {
+  const button = $("logout-button");
+  button.disabled = true;
+  status("global-status", "Logging out…");
+  try {
+    const response = await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Accept": "application/json" }
+    });
+    if (!response.ok) throw new Error("Logout failed (HTTP " + response.status + ").");
+    status("global-status", "Logout successful. Redirecting…");
+    window.location.assign("/login");
+  } catch (error) {
+    status("global-status", error.message || "Logout failed.", true);
+    button.disabled = false;
+  }
+}
+$("refresh-sessions").addEventListener("click", loadSessions);
+$("logout-button").addEventListener("click", logout);
+
+Promise.all([
+  loadSessions(),
+  loadList({
+    url: "/api/dashboard/login-history",
+    containerId: "history-list", statusId: "history-status",
+    label: "login history",
+    titleFields: ["event_type", "action", "status", "type", "title"],
+    detailFields: [
+      ["created_at", "timestamp", "occurred_at"],
+      ["ip_address", "ip"],
+      ["device", "user_agent"],
+      ["message", "description"]
+    ]
+  }),
+  loadList({
+    url: "/api/dashboard/security-alerts",
+    containerId: "alerts-list", statusId: "alerts-status",
+    label: "security alerts",
+    titleFields: ["title", "type", "severity", "event_type"],
+    detailFields: [
+      ["created_at", "timestamp", "occurred_at"],
+      ["message", "description", "reason"],
+      ["status", "classification"]
+    ]
+  }),
+  loadList({
+    url: "/api/social/events",
+    containerId: "events-list", statusId: "events-status",
+    label: "security events",
+    titleFields: ["event_type", "type", "action", "title"],
+    detailFields: [
+      ["created_at", "timestamp", "occurred_at"],
+      ["severity", "classification"],
+      ["message", "description", "reason"]
+    ]
+  })
+]).then(() => status("global-status", "Security data loading completed. Check each section for access or API errors."));
+</script>
+</body>
+</html>"""
+    return Response(page, mimetype="text/html")
