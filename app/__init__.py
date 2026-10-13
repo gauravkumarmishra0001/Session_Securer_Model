@@ -4,6 +4,7 @@ from flask import Flask, request
 
 from app.config import Config
 from app.database import db
+from flask_migrate import Migrate
 
 
 def create_app():
@@ -38,6 +39,9 @@ def create_app():
     # Phase 6 models
     from app.models.social_account import SocialAccount
     from app.models.social_event import SocialEvent
+
+    # Versioned schema migrations
+    Migrate(app, db)
 
     # Existing routes
     from app.routes.auth import auth_bp
@@ -98,7 +102,11 @@ def create_app():
 
         return response
 
-    with app.app_context():
-        db.create_all()
+    # Preserve automatic table creation for existing development/tests.
+    # Migration and production workflows must set
+    # SESSION_SECURER_USE_MIGRATIONS=1 and run `flask db upgrade`.
+    if os.environ.get("SESSION_SECURER_USE_MIGRATIONS") != "1":
+        with app.app_context():
+            db.create_all()
 
     return app

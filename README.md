@@ -749,3 +749,22 @@ Before production release:
 
 A successful local test suite or Git push does not prove that production
 deployment, database persistence, backups, or restore have been verified.
+
+
+## Database migrations
+
+The application supports versioned schema migrations through Flask-Migrate.
+
+- Install dependencies with `pip install -r requirements.txt`.
+- Generate a revision after reviewing model changes:
+  `flask --app app:create_app db migrate -m "Describe schema change"`.
+- Apply reviewed revisions with:
+  `flask --app app:create_app db upgrade`.
+- For production, set `SESSION_SECURER_USE_MIGRATIONS=1` and apply migrations
+  as a deployment step before starting the application.
+- Existing databases must be backed up and schema-compared before being
+  stamped with `flask --app app:create_app db stamp head`. Do not stamp an
+  unknown or mismatched schema.
+- `db.create_all()` remains enabled for backward-compatible development/tests
+  unless `SESSION_SECURER_USE_MIGRATIONS=1` is set. Do not use it as a
+  substitute for production migrations.

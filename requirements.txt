@@ -3,3 +3,4 @@ Flask-SQLAlchemy
 user-agents
 pytest
 gunicorn>=22.0,<24.0
+Flask-Migrate>=4.0,<5.0
