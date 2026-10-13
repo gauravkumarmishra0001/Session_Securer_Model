@@ -23,6 +23,8 @@ def create_app():
     if os.environ.get("SESSION_SECURER_SECURE_COOKIES") == "1":
         app.config["SESSION_COOKIE_SECURE"] = True
 
+    from app.operations import configure_phase722_operations
+    configure_phase722_operations(app)
     db.init_app(app)
 
     # Existing models

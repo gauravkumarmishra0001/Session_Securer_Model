@@ -706,3 +706,22 @@ Python compilation, and Git diff checks before commit and push.
   throttling across workers, schema validation, and authorization for every
   object-level operation. Use a shared rate-limit backend for multi-worker
   deployments rather than relying solely on process-local counters.
+
+## Phase 7.22 Operational Configuration
+
+Set `APP_ENV=production` for production deployments. Supply `SECRET_KEY` or
+`FLASK_SECRET_KEY` through your hosting platform's secret manager. Never commit
+secret values. `DATABASE_URL` overrides the SQLAlchemy database URL.
+
+Health probes:
+- `GET /health/live` checks whether the web process responds.
+- `GET /health/ready` checks database connectivity when Flask-SQLAlchemy is
+  initialized.
+
+Production session cookies are configured Secure, HttpOnly, and SameSite=Lax.
+Use HTTPS in production and verify reverse-proxy and cookie behavior in the
+actual hosting environment.
+
+This change does not run schema migrations, create database tables, configure
+platform-specific process management, or establish backups and monitoring.
+Those must be verified for the chosen deployment platform.
