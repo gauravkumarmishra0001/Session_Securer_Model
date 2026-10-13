@@ -689,3 +689,20 @@ Python compilation, and Git diff checks before commit and push.
 - Production note: review the policy wording with the service operator, verify
   real data flows and retention, and implement server-side consent enforcement
   before making compliance claims.
+## Phase 7.21 — Authentication and Application Security Audit
+
+- Added regression checks for route-module syntax, existing authentication and
+  authorization failure handling, session revocation/logout paths, and the
+  Phase 7.20 policy and security-center routes.
+- Audited route source for evidence of session ownership checks, CSRF/Origin
+  protection, cookie flags, rate limiting, input validation, and authentication
+  failures.
+- Important: source-keyword detection is not proof that a control is correctly
+  enforced. Review the actual request paths and run integration tests before
+  claiming CSRF protection, secure cookie configuration, rate limiting, or
+  comprehensive validation is implemented.
+- Before production deployment, verify cross-origin state-changing requests,
+  cookie Secure/HttpOnly/SameSite behavior over HTTPS, login and recovery
+  throttling across workers, schema validation, and authorization for every
+  object-level operation. Use a shared rate-limit backend for multi-worker
+  deployments rather than relying solely on process-local counters.
