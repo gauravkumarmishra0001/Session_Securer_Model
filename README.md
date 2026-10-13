@@ -725,3 +725,27 @@ actual hosting environment.
 This change does not run schema migrations, create database tables, configure
 platform-specific process management, or establish backups and monitoring.
 Those must be verified for the chosen deployment platform.
+
+## Phase 7.22 production-readiness checklist
+
+Before production release:
+
+- Configure the secret key and database connection through the hosting
+  platform's secret/environment settings. Never commit real secrets.
+- Use a persistent managed database. Container-local SQLite storage may be
+  ephemeral and must not be treated as durable production storage.
+- Apply schema changes through the migration system appropriate to the actual
+  models and database. Verify migrations on a staging database first.
+- Configure automated database backups, retention and access controls.
+- Perform a restore drill and verify the restored data before declaring
+  disaster recovery ready.
+- Configure the hosting platform to use `/health/live` for liveness and
+  `/health/ready` for readiness, after verifying their actual behavior.
+- Enable HTTPS and secure cookie settings in production.
+- Verify CSRF protection, authorization, rate limiting, and input validation.
+- Configure log retention, monitoring and alerts. Do not log credentials,
+  cookies, session identifiers or access tokens.
+- Run an end-to-end smoke test against the actual deployment and database.
+
+A successful local test suite or Git push does not prove that production
+deployment, database persistence, backups, or restore have been verified.

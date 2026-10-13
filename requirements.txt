@@ -2,3 +2,4 @@ Flask
 Flask-SQLAlchemy
 user-agents
 pytest
+gunicorn>=22.0,<24.0
