@@ -1285,3 +1285,320 @@ Promise.all([
 </body>
 </html>"""
     return Response(page, mimetype="text/html")
+
+# PHASE_7_20_PRIVACY_CONTROLS
+# Self-contained pages; do not render API/user-supplied values as HTML.
+# Browser permission prompts are controlled by the browser and user agent.
+# The telemetry preference below is local to this browser and is not a
+# server-side consent record or proof that telemetry is disabled server-side.
+
+_PHASE720_CSS = """
+:root {
+  color-scheme: dark;
+  --p720-bg: #111418;
+  --p720-panel: #191e24;
+  --p720-border: #343c46;
+  --p720-text: #edf1f5;
+  --p720-muted: #b7c0cb;
+  --p720-accent: #a9c8e8;
+  --p720-focus: #f4d27a;
+}
+.p720-page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  color: var(--p720-text);
+  background: var(--p720-bg);
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.p720-page * { box-sizing: border-box; }
+.p720-page h1, .p720-page h2, .p720-page h3 { line-height: 1.25; }
+.p720-page h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); }
+.p720-page h2 { margin-top: 2rem; font-size: 1.35rem; }
+.p720-page p, .p720-page li { max-width: 78ch; }
+.p720-page .p720-muted { color: var(--p720-muted); }
+.p720-page .p720-panel {
+  border: 1px solid var(--p720-border);
+  background: var(--p720-panel);
+  padding: clamp(1rem, 3vw, 1.5rem);
+  margin: 1rem 0;
+}
+.p720-page .p720-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.p720-page button, .p720-page a.p720-button {
+  display: inline-block;
+  color: var(--p720-text);
+  background: #273542;
+  border: 1px solid #66798b;
+  padding: .65rem .9rem;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+.p720-page a { color: var(--p720-accent); }
+.p720-page button:disabled { cursor: not-allowed; opacity: .65; }
+.p720-page :focus-visible {
+  outline: 3px solid var(--p720-focus);
+  outline-offset: 3px;
+}
+.p720-page .p720-status { min-height: 1.5em; overflow-wrap: anywhere; }
+.p720-page .p720-check { display: flex; align-items: flex-start; gap: .7rem; }
+.p720-page input { margin-top: .45rem; }
+.p720-page .p720-skip {
+  position: absolute; left: -10000px; top: auto;
+  width: 1px; height: 1px; overflow: hidden;
+}
+.p720-page .p720-skip:focus {
+  position: static; width: auto; height: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .p720-page *, .p720-page *::before, .p720-page *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+"""
+
+def _phase720_shell(title, body, extra_script=""):
+    # title/body are developer-authored constants, not request parameters.
+    from flask import make_response
+    html = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>""" + title + """ | Session Securer</title>
+<style>""" + _PHASE720_CSS + """</style>
+</head>
+<body>
+<div class="p720-page">
+<a class="p720-skip" href="#main-content">Skip to main content</a>
+<header>
+  <p class="p720-muted">Session Securer · Security and privacy</p>
+  <nav aria-label="Privacy navigation">
+    <a href="/security-center">Security Center</a> ·
+    <a href="/terms">Terms of Service</a> ·
+    <a href="/privacy">Privacy Policy</a>
+  </nav>
+</header>
+<main id="main-content">
+""" + body + """
+</main>
+<footer class="p720-muted">
+  <p>Review these controls in your browser and verify server-side behavior
+  before relying on them for compliance or security decisions.</p>
+</footer>
+</div>
+""" + (("<script>" + extra_script + "</script>") if extra_script else "") + """
+</body>
+</html>"""
+    response = make_response(html, 200)
+    response.headers["Content-Type"] = "text/html; charset=utf-8"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Permissions-Policy"] = (
+        "camera=(), microphone=(), geolocation=(), payment=()"
+    )
+    return response
+
+@web_bp.get("/terms")
+def phase720_terms():
+    body = """
+<h1>Terms of Service</h1>
+<p class="p720-muted">Informational project terms. Have these reviewed and
+approved for your actual deployment before treating them as a legal agreement.</p>
+<section class="p720-panel">
+<h2>1. Acceptable use</h2>
+<p>Use Session Securer only with accounts, devices, sessions, and systems
+you are authorized to access. Do not use the service to violate law,
+impersonate others, interfere with systems, or gain unauthorized access.</p>
+<h2>2. Security limitations</h2>
+<p>Security controls reduce risk but cannot guarantee that every attack,
+compromise, outage, or data loss will be prevented. Keep your devices and
+account credentials secure and report suspected vulnerabilities responsibly.</p>
+<h2>3. Availability and changes</h2>
+<p>Features may change, be unavailable, or be withdrawn for maintenance,
+security, or operational reasons. Do not rely on the service as your only
+means of protecting critical accounts or preserving important records.</p>
+<h2>4. No unsupported promises</h2>
+<p>No warranty, service level, compliance status, or fitness for a particular
+purpose is promised by this informational page. Any binding terms must be
+approved and published by the service operator.</p>
+<h2>5. Contact and updates</h2>
+<p>Before production release, the operator should provide a monitored contact
+channel, an effective date, and a process for communicating material changes.</p>
+</section>
+<p><a href="/privacy">Read the Privacy Policy</a></p>
+"""
+    return _phase720_shell("Terms of Service", body)
+
+@web_bp.get("/privacy")
+def phase720_privacy():
+    body = """
+<h1>Privacy Policy</h1>
+<p class="p720-muted">This page describes intended privacy principles. Confirm
+actual data flows, retention, vendors, and legal requirements before production.</p>
+<section class="p720-panel">
+<h2>Information and purpose</h2>
+<p>Authentication identifiers, session metadata, security events, and login
+history may be processed when the application implements those features.
+Collect only what is needed to operate the service, secure accounts, and
+investigate abuse.</p>
+<h2>Retention and access</h2>
+<p>Define retention periods for sessions, audit events, and logs. Restrict access
+to authorized operators and protect stored records against unauthorized reading,
+alteration, and deletion.</p>
+<h2>Sharing and third parties</h2>
+<p>Disclose hosting providers, analytics tools, and other recipients only after
+verifying which services the deployment actually uses. Do not assume that
+this page disables collection performed by the server or third parties.</p>
+<h2>Your choices</h2>
+<p>You can manage browser permissions using the controls below and your browser
+settings. The local telemetry preference is only a preference stored in this
+browser; it does not disable server-side logging or network requests by itself.</p>
+<h2>Contact and policy updates</h2>
+<p>Publish a real privacy contact, applicable jurisdiction, effective date,
+and a process for access, correction, deletion, and complaints where required.</p>
+</section>
+<section class="p720-panel" aria-labelledby="p720-controls-title">
+<h2 id="p720-controls-title">Privacy controls</h2>
+<p>These controls report browser capabilities and save a local preference.
+They do not replace server-side consent enforcement.</p>
+<div class="p720-check">
+<input id="p720-telemetry" type="checkbox">
+<label for="p720-telemetry">Allow optional telemetry preference in this browser</label>
+</div>
+<p id="p720-telemetry-status" class="p720-status" role="status" aria-live="polite"></p>
+<h3>Browser permissions</h3>
+<p class="p720-muted">Permission queries may be unsupported. Use your browser's
+site settings to revoke permissions when a query or prompt is unavailable.</p>
+<div class="p720-actions">
+<button type="button" id="p720-check-permissions">Check permission status</button>
+<button type="button" id="p720-location">Request location permission</button>
+<button type="button" id="p720-notifications">Request notification permission</button>
+</div>
+<ul id="p720-permission-results" aria-live="polite"></ul>
+<p id="p720-permission-status" class="p720-status" role="status" aria-live="polite"></p>
+</section>
+<p><a href="/terms">Read the Terms of Service</a></p>
+"""
+    script = r"""
+(function () {
+  "use strict";
+  const telemetry = document.getElementById("p720-telemetry");
+  const telemetryStatus = document.getElementById("p720-telemetry-status");
+  const permissionResults = document.getElementById("p720-permission-results");
+  const permissionStatus = document.getElementById("p720-permission-status");
+  const storageKey = "session-securer.optional-telemetry-preference.v1";
+
+  function setStatus(node, message) {
+    node.textContent = message;
+  }
+
+  function loadPreference() {
+    try {
+      const saved = window.localStorage.getItem(storageKey);
+      telemetry.checked = saved === "enabled";
+      setStatus(
+        telemetryStatus,
+        saved === null
+          ? "No preference saved in this browser."
+          : "Saved local preference: " + (saved === "enabled" ? "enabled" : "disabled") + "."
+      );
+    } catch (_) {
+      telemetry.checked = false;
+      telemetry.disabled = true;
+      setStatus(telemetryStatus, "Local storage is unavailable; no preference was changed.");
+    }
+  }
+
+  telemetry.addEventListener("change", function () {
+    try {
+      window.localStorage.setItem(storageKey, telemetry.checked ? "enabled" : "disabled");
+      setStatus(
+        telemetryStatus,
+        "Saved local preference: " + (telemetry.checked ? "enabled" : "disabled") +
+        ". This does not change server-side logging or network requests."
+      );
+    } catch (_) {
+      setStatus(telemetryStatus, "Could not save the preference in this browser.");
+    }
+  });
+
+  async function queryPermission(name) {
+    if (!navigator.permissions || typeof navigator.permissions.query !== "function") {
+      return "status unavailable in this browser";
+    }
+    try {
+      const result = await navigator.permissions.query({ name: name });
+      return result.state;
+    } catch (_) {
+      return "unsupported or unavailable";
+    }
+  }
+
+  async function checkPermissions() {
+    permissionResults.replaceChildren();
+    const checks = [
+      ["geolocation", "Location"],
+      ["notifications", "Notifications"],
+      ["camera", "Camera"],
+      ["microphone", "Microphone"]
+    ];
+    for (const entry of checks) {
+      const li = document.createElement("li");
+      const state = await queryPermission(entry[0]);
+      li.textContent = entry[1] + ": " + state;
+      permissionResults.appendChild(li);
+    }
+    setStatus(permissionStatus, "Permission status check finished.");
+  }
+
+  document.getElementById("p720-check-permissions").addEventListener("click", function () {
+    checkPermissions().catch(function () {
+      setStatus(permissionStatus, "Unable to check permissions in this browser.");
+    });
+  });
+
+  document.getElementById("p720-location").addEventListener("click", function () {
+    if (!navigator.geolocation) {
+      setStatus(permissionStatus, "Geolocation is unavailable in this browser.");
+      return;
+    }
+    setStatus(permissionStatus, "Waiting for the browser's location decision.");
+    navigator.geolocation.getCurrentPosition(
+      function () {
+        setStatus(permissionStatus,
+          "Location access was granted for this request. No coordinates are displayed here.");
+      },
+      function (error) {
+        const messages = {
+          1: "Location permission denied.",
+          2: "Location position unavailable.",
+          3: "Location request timed out."
+        };
+        setStatus(permissionStatus, messages[error.code] || "Location request failed.");
+      },
+      { maximumAge: 0, timeout: 10000, enableHighAccuracy: false }
+    );
+  });
+
+  document.getElementById("p720-notifications").addEventListener("click", async function () {
+    if (!("Notification" in window) || typeof Notification.requestPermission !== "function") {
+      setStatus(permissionStatus, "Notifications are unavailable in this browser.");
+      return;
+    }
+    try {
+      const result = await Notification.requestPermission();
+      setStatus(permissionStatus, "Notification permission: " + result + ".");
+    } catch (_) {
+      setStatus(permissionStatus, "Could not request notification permission.");
+    }
+  });
+
+  loadPreference();
+})();
+"""
+    return _phase720_shell("Privacy Policy", body, script)

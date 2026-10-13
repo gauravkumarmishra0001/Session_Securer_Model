@@ -676,3 +676,16 @@ before treating the UI as production-ready.
 
 Validation for this phase must include the full existing test suite,
 Python compilation, and Git diff checks before commit and push.
+## Phase 7.20 — Privacy, Transparency, and Accessibility
+
+- Added Terms of Service and Privacy Policy information pages.
+- Added browser-local optional telemetry preference UI and browser permission
+  status/request controls. The local preference is not server-side consent
+  enforcement and does not itself disable server logging or network requests.
+- Added responsive layout, skip navigation, visible keyboard focus, live status
+  announcements, and reduced-motion handling for the new pages.
+- Added regression tests for route presence, policy topics, accessibility hooks,
+  safe DOM rendering, and response headers.
+- Production note: review the policy wording with the service operator, verify
+  real data flows and retention, and implement server-side consent enforcement
+  before making compliance claims.
