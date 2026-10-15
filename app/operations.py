@@ -18,20 +18,48 @@ def configure_phase722_operations(app):
     ).strip().lower()
     production = environment in {"production", "prod"}
 
-    secret = os.getenv("SECRET_KEY") or os.getenv("FLASK_SECRET_KEY")
+    secret = (
+        os.getenv("SESSION_SECURER_SECRET_KEY")
+        or os.getenv("SECRET_KEY")
+        or os.getenv("FLASK_SECRET_KEY")
+    )
+    insecure_defaults = {
+        "development-secret-key-change-in-production",
+        "dev",
+        "secret",
+        "changeme",
+        "change-me",
+    }
+
+    if production:
+        if not secret or secret.strip().lower() in insecure_defaults:
+            raise RuntimeError(
+                "Production requires a strong, explicitly configured secret "
+                "via SESSION_SECURER_SECRET_KEY, SECRET_KEY, or FLASK_SECRET_KEY."
+            )
+        if len(secret) < 32:
+            raise RuntimeError(
+                "Production secret must be at least 32 characters long."
+            )
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            raise RuntimeError(
+                "Production requires DATABASE_URL pointing to the intended "
+                "persistent database."
+            )
+    else:
+        database_url = os.getenv("DATABASE_URL")
+
     if secret:
         app.config["SECRET_KEY"] = secret
-    elif not app.config.get("SECRET_KEY"):
-        if production:
-            raise RuntimeError(
-                "Production startup requires SECRET_KEY or FLASK_SECRET_KEY."
-            )
+    elif not app.config.get("SECRET_KEY") or app.config.get("SECRET_KEY") == (
+        "development-secret-key-change-in-production"
+    ):
         app.config["SECRET_KEY"] = os.urandom(32).hex()
         app.logger.warning(
             "No secret key supplied; using an ephemeral development key."
         )
 
-    database_url = os.getenv("DATABASE_URL")
     if database_url:
         if database_url.startswith("postgres://"):
             database_url = "postgresql://" + database_url[len("postgres://"):]

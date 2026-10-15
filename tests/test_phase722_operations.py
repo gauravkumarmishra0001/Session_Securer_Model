@@ -40,7 +40,7 @@ def test_production_requires_secret(monkeypatch):
     try:
         module.configure_phase722_operations(app)
     except RuntimeError as exc:
-        assert "requires SECRET_KEY" in str(exc)
+        assert "explicitly configured secret" in str(exc)
     else:
         raise AssertionError("Production must require an explicit secret.")
 
@@ -61,8 +61,11 @@ def test_database_url_override(monkeypatch):
 
 def test_production_cookie_flags(monkeypatch):
     monkeypatch.setenv("APP_ENV", "production")
-    monkeypatch.setenv("SECRET_KEY", "test-only-secret")
-    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv(
+        "SECRET_KEY",
+        "test-only-secret-value-with-at-least-32-characters"
+    )
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///phase722-cookie-test.db")
 
     module = load_module()
     app = Flask(__name__)
