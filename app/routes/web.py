@@ -140,6 +140,14 @@ SESSION SECURER
 Home
 </a>
 
+<a href="/login">
+Login
+</a>
+
+<a href="/register">
+Register
+</a>
+
 <a href="/social">
 Social Lab
 </a>
@@ -686,6 +694,174 @@ def home():
         HOME_PAGE,
         mimetype="text/html"
     )
+
+
+
+
+AUTH_PAGE_STYLE = """
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: #0b1014; color: #e5edf1;
+  font-family: Arial, Helvetica, sans-serif;
+}
+header { border-bottom: 1px solid #26343d; background: #0d1419; }
+nav {
+  max-width: 1000px; margin: auto; padding: 20px 24px;
+  display: flex; justify-content: space-between; gap: 18px;
+  flex-wrap: wrap;
+}
+a { color: #55c7d9; text-decoration: none; }
+main {
+  width: min(460px, calc(100% - 32px));
+  margin: 64px auto; padding: 28px;
+  background: #11181e; border: 1px solid #26343d;
+}
+h1 { margin-top: 0; }
+p, .muted { color: #a3b1b9; line-height: 1.6; }
+label { display: block; margin: 18px 0 7px; }
+input {
+  width: 100%; padding: 12px; color: #e5edf1;
+  background: #0b1014; border: 1px solid #34444e;
+}
+button {
+  margin-top: 22px; width: 100%; padding: 13px;
+  background: #131c22; color: #e5edf1;
+  border: 1px solid #55c7d9; cursor: pointer;
+}
+button:disabled { opacity: .6; cursor: wait; }
+#status { overflow-wrap: anywhere; }
+</style>
+"""
+
+
+def _auth_page(title, intro, fields, endpoint, mode):
+    field_markup = []
+    for name, label, input_type, autocomplete in fields:
+        field_markup.append(
+            '<label for="' + name + '">' + label + '</label>'
+            '<input id="' + name + '" name="' + name + '" type="' +
+            input_type + '" autocomplete="' + autocomplete +
+            '" required' +
+            (' minlength="8"' if name == 'password' and mode == 'register' else '') +
+            '>'
+        )
+
+    alternate = (
+        '<p class="muted">Already registered? <a href="/login">Log in</a></p>'
+        if mode == "register"
+        else '<p class="muted">Need an account? <a href="/register">Register</a></p>'
+    )
+
+    page = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>""" + title + """ | Session Securer</title>
+""" + AUTH_PAGE_STYLE + """
+</head>
+<body>
+<header><nav>
+<strong>SESSION SECURER</strong>
+<div>
+<a href="/">Home</a> &nbsp;·&nbsp;
+<a href="/security-center">Security Center</a>
+</div>
+</nav></header>
+<main>
+<h1>""" + title + """</h1>
+<p>""" + intro + """</p>
+<form id="auth-form">
+""" + "\n".join(field_markup) + """
+<button id="submit-button" type="submit">""" + title + """</button>
+</form>
+<p id="status" role="status" aria-live="polite"></p>
+""" + alternate + """
+</main>
+<script>
+(function () {
+  const form = document.getElementById("auth-form");
+  const status = document.getElementById("status");
+  const button = document.getElementById("submit-button");
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    status.textContent = "";
+    button.disabled = true;
+
+    const payload = {};
+    for (const field of form.elements) {
+      if (field.name) payload[field.name] = field.value;
+    }
+
+    try {
+      const response = await fetch("""" + endpoint + """", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json().catch(function () { return {}; });
+
+      if (response.status === 202) {
+        status.textContent =
+          "Additional verification is required. This page does not complete OTP verification. " +
+          "Your account has not been reported as fully signed in.";
+      } else if (!response.ok) {
+        status.textContent = result.error || "Request failed. Please try again.";
+      } else if (response.ok && response.status === 201) {
+        status.textContent = "Registration successful. Redirecting to login...";
+        window.location.assign("/login");
+      } else if (response.ok && result.message === "login successful") {
+        status.textContent = "Login successful. Opening dashboard...";
+        window.location.assign("/dashboard");
+      } else {
+        status.textContent = result.message || "Request completed.";
+      }
+    } catch (_) {
+      status.textContent = "Could not contact the server. Please try again.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>"""
+    return Response(page, mimetype="text/html")
+
+
+@web_bp.get("/login")
+def phase721_login_page():
+    return _auth_page(
+        "Login",
+        "Sign in through Session Securer's existing authentication and risk checks.",
+        [
+            ("email", "Email address", "email", "username"),
+            ("password", "Password", "password", "current-password"),
+        ],
+        "/api/auth/login",
+        "login",
+    )
+
+
+@web_bp.get("/register")
+def phase721_register_page():
+    return _auth_page(
+        "Register",
+        "Create an account. Passwords must contain at least eight characters.",
+        [
+            ("username", "Username", "text", "username"),
+            ("email", "Email address", "email", "email"),
+            ("password", "Password", "password", "new-password"),
+        ],
+        "/api/auth/register",
+        "register",
+    )
+
 
 
 @web_bp.get("/social")
